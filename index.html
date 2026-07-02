@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>XtremeTiers — Admin</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f0c040'/%3E%3Cstop offset='100%25' stop-color='%23e05c2a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='%230d1117'/%3E%3Ctext x='32' y='48' font-family='Arial Black,sans-serif' font-size='48' font-weight='900' text-anchor='middle' fill='url(%23g)'%3EX%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-auth-compat.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-bright: #f0f6fc;
+    --muted: #8b949e;
+    --accent: #f0c040;
+    --accent2: #e05c2a;
+    --winner-green: #238636;
+    --color-ht1: #ff4444; --color-lt1: #a855f7;
+    --color-ht2: #ff8800; --color-lt2: #ec4899;
+    --color-ht3: #ffcc00; --color-lt3: #3b82f6;
+    --color-ht4: #88ff00; --color-lt4: #6e7681;
+    --color-ht5: #00ccff; --color-lt5: #4b5563;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    background-color: #090d13; border-bottom: 2px solid var(--border);
+    padding: 0 24px;
+  }
+  .header-inner {
+    max-width: 1300px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; height: 70px;
+  }
+  .logo {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.6rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px;
+  }
+  .logo-sub { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--muted); font-size: 0.85rem; letter-spacing: 1px; margin-left: 10px; }
+
+  main { max-width: 1300px; margin: 24px auto; padding: 0 24px 60px; }
+
+  /* ── LOGIN GATE ── */
+  #loginGate {
+    max-width: 380px; margin: 90px auto; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 36px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #loginGate h2 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--accent); margin-bottom: 6px; }
+  #loginGate p { font-size: 0.85rem; color: var(--muted); margin-bottom: 22px; }
+  #loginError { color: #f87171; font-size: 0.85rem; margin-top: 12px; min-height: 18px; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; }
+  .form-input, .form-select {
+    background: #0d1117 !important; border: 1px solid var(--border) !important;
+    color: var(--text-bright) !important; padding: 10px 14px !important;
+    border-radius: 8px !important; font-size: 0.9rem !important; outline: none !important;
+    transition: border-color 0.2s !important; width: 100%;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent) !important; }
+  .btn-submit {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #0d1117; border: none; padding: 12px 28px; border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
+    cursor: pointer; transition: opacity 0.2s; letter-spacing: 0.5px; width: 100%;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── ADMIN DASHBOARD ── */
+  .admin-dashboard {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    display: grid; grid-template-columns: 260px 1fr; min-height: 600px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .admin-sidebar { background: linear-gradient(180deg, #090d13 0%, #0d1117 100%); border-right: 1px solid var(--border); padding: 0; }
+  .admin-sidebar-header {
+    padding: 24px 20px 16px; border-bottom: 1px solid var(--border);
+    font-family: 'Orbitron', sans-serif; font-size: 0.75rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+  }
+  .admin-tab-btn {
+    width: 100%; text-align: left; background: none; border: none; padding: 14px 20px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem; color: var(--muted);
+    cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s;
+    border-left: 3px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .admin-tab-btn:hover { color: var(--text-bright); background: rgba(255,255,255,0.03); border-left-color: var(--border); }
+  .admin-tab-btn.active { color: var(--accent); background: rgba(240,192,64,0.06); border-left-color: var(--accent); }
+  .admin-tab-btn .tab-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+  .admin-workspace-view { padding: 32px; display: none; }
+  .admin-workspace-view.active { display: block; }
+  .admin-view-title {
+    font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--accent);
+    margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .admin-view-title::before { content: ''; display: block; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+
+  .adm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .adm-table th {
+    text-align: left; padding: 10px 14px; font-family: 'Rajdhani', sans-serif; font-weight: 700;
+    font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border); background: rgba(0,0,0,0.2);
+  }
+  .adm-table td { padding: 11px 14px; border-bottom: 1px solid rgba(48,54,61,0.5); color: var(--text); vertical-align: middle; }
+  .adm-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .btn-action {
+    padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; cursor: pointer; border: none; transition: opacity 0.2s; margin-right: 4px;
+  }
+  .btn-action.edit { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .btn-action.edit:hover { background: rgba(59,130,246,0.3); }
+  .btn-action.delete { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .btn-action.delete:hover { background: rgba(239,68,68,0.25); }
+
+  .region-pill { display: inline-block; padding: 4px 12px; border-radius: 4px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px; }
+  .pill-na { background: #1e3a5f; color: #60a5fa; }
+  .pill-eu { background: #1a3a2a; color: #4ade80; }
+  .pill-as { background: #3a1a2a; color: #f472b6; }
+  .pill-sa { background: #2a2a1a; color: #facc15; }
+
+  .gm-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 36px; gap: 10px; align-items: end;
+    background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+  }
+  .btn-add-gm {
+    background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.3); color: var(--accent);
+    padding: 6px 14px; border-radius: 6px; font-family: Rajdhani,sans-serif; font-weight: 700;
+    font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-add-gm:hover { background: rgba(240,192,64,0.2); }
+  .btn-rm-gm {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171;
+    width: 32px; height: 32px; border-radius: 6px; font-size: 1rem; cursor: pointer;
+    display:flex; align-items:center; justify-content:center; transition: all 0.2s; flex-shrink: 0;
+  }
+  .btn-rm-gm:hover { background: rgba(239,68,68,0.25); }
+  .btn-cancel-edit {
+    background: rgba(110,118,129,0.15); border: 1px solid var(--border); color: var(--muted);
+    padding: 12px 20px; border-radius: 8px; font-family: Rajdhani,sans-serif; font-weight: 700;
+    font-size: 1rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-cancel-edit:hover { color: var(--text-bright); }
+
+  .circular-mode-icon {
+    width: 26px; height: 26px; border-radius: 50%; background-color: #0d1117; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem; overflow: hidden;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <span class="logo">XTREME<span>TIERS</span></span><span class="logo-sub">ADMIN</span>
+    </div>
+    <div id="signOutWrap" style="display:none;">
+      <button class="btn-action delete" onclick="signOutAdmin()">🚪 Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div id="loginGate">
+    <h2>Admin Sign-In</h2>
+    <p>This panel is restricted to authenticated admins. Sign-in is verified by Firebase Authentication — there is no password stored in this page.</p>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Email</label>
+      <input type="email" class="form-input" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="form-group" style="margin-bottom:18px;">
+      <label>Password</label>
+      <input type="password" class="form-input" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-submit" id="btnLogin" onclick="doAdminLogin()">Sign In</button>
+    <div id="loginError"></div>
+  </div>
+
+  <div class="admin-dashboard" id="adminDashboard" style="display:none;">
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-header">Admin Panel</div>
+      <button class="admin-tab-btn active" id="btn-adm-add" onclick="switchAdminSubView('add')"><span class="tab-icon">➕</span> Add Player Record</button>
+      <button class="admin-tab-btn" id="btn-adm-logos" onclick="switchAdminSubView('logos')"><span class="tab-icon">🖼️</span> Update Mode Icons</button>
+      <button class="admin-tab-btn" id="btn-adm-manage" onclick="switchAdminSubView('manage')"><span class="tab-icon">📋</span> Manage Profiles</button>
+      <button class="admin-tab-btn" id="btn-adm-sheets" onclick="switchAdminSubView('sheets')"><span class="tab-icon">🔥</span> Firebase Sync</button>
+    </div>
+
+    <div class="admin-body">
+      <div class="admin-workspace-view active" id="adm-view-add">
+        <div class="admin-view-title" id="formViewTitle">Add Player Record</div>
+        <div class="form-grid" style="margin-bottom:20px;">
+          <div class="form-group">
+            <label>Player IGN *</label>
+            <input type="text" class="form-input" id="formPlayerIgn" placeholder="e.g. ItzRealMe">
+          </div>
+          <div class="form-group">
+            <label>Region *</label>
+            <select class="form-select" id="formPlayerRegion">
+              <option value="NA">NA</option>
+              <option value="EU">EU</option>
+              <option value="AS">AS</option>
+              <option value="SA">SA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Avatar URL (Optional)</label>
+            <input type="text" class="form-input" id="formPlayerAvatar" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Device</label>
+            <select class="form-select" id="formPlayerDevice">
+              <option value="">-- Unknown --</option>
+              <option value="PC">PC</option>
+              <option value="Mobile">Mobile</option>
+              <option value="Tablet">Tablet</option>
+              <option value="Mac">Mac</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;font-family:Rajdhani,sans-serif;letter-spacing:0.5px;">Gamemode Tiers</label>
+          <button class="btn-add-gm" onclick="addGamemodeRow()">+ Add Gamemode</button>
+        </div>
+        <div id="gamemodeRowsContainer" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+        <input type="hidden" id="formEditPlayerName" value="">
+        <button class="btn-submit" id="btnSavePlayerProfile" style="width:auto;" onclick="commitProfileEntryRecordToCache()">💾 Save Player</button>
+        <button class="btn-cancel-edit" id="btnCancelEdit" onclick="resetAdminEntryFormStates()" style="display:none; margin-left:10px;">Cancel</button>
+      </div>
+
+      <div class="admin-workspace-view" id="adm-view-logos">
+        <div class="admin-view-title">Manage Gamemode Logos &amp; Graphic Assets</div>
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>Gamemode</th>
+              <th>Asset Type</th>
+              <th>Asset Value (Emoji / Logo Link URL)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminGamemodeLogosContainerRows"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-workspace-view" id="adm-view-manage">
+        <div class="admin-view-title">Registered Player Profiles</div>
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Region</th>
+              <th>Gamemodes &amp; Tiers</th>
+              <th>Device</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminProfileGridTargetRows"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-workspace-view" id="adm-view-sheets">
+        <div class="admin-view-title">Firebase Cloud Sync</div>
+        <div class="form-grid" style="margin-bottom:20px;">
+          <div class="form-group">
+            <label>Firestore Project ID</label>
+            <input type="text" class="form-input" id="formFirebaseProjectId" value="" readonly>
+          </div>
+          <div class="form-group">
+            <label>Collection Name</label>
+            <input type="text" class="form-input" value="players" readonly>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:24px; background:#0d1117; border:1px solid var(--border); padding:14px 18px; border-radius:8px;">
+          <span id="fbStatusDot" style="width:10px; height:10px; border-radius:50%; background:var(--muted); display:inline-block; flex-shrink:0;"></span>
+          <span id="fbStatusText" style="font-family:'Rajdhani',sans-serif; font-weight:700; color:var(--muted);">Connecting...</span>
+          <span id="fbDocCount" style="color:var(--muted); font-size:0.85rem; margin-left:auto;"></span>
+        </div>
+        <button class="btn-submit" style="width:auto;" onclick="forceFirebaseConnectionCheck()">🔄 Test Connection</button>
+
+        <div style="margin-top: 30px;">
+          <h4 style="font-family:'Rajdhani'; color:var(--accent); font-size:1.1rem; margin-bottom:10px;">Firestore Document Field Format:</h4>
+          <div style="background:#0d1117; border:1px solid var(--border); padding:15px; border-radius:8px; font-family:monospace; font-size:0.85rem; color:var(--text);">
+            name, region, gamemode, tier, points, avatar, device, emoji
+          </div>
+          <p style="font-size: 0.8rem; color: var(--muted); margin-top: 14px;">
+            Live sync is active — adding, editing, or deleting a player updates the <code>players</code> collection in Firestore instantly, and the public leaderboard refreshes automatically. No manual sync needed.
+          </p>
+          <p style="font-size: 0.8rem; color: var(--muted); margin-top: 14px;">
+            ⚠️ This page's URL should never be linked from the public site or shared publicly. Real access control is enforced by <strong>Firebase Authentication</strong> and your <strong>Firestore Security Rules</strong> — keep write access in those rules restricted to signed-in admins, since the config above is not a secret.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// 🔥 FIREBASE PROJECT CONFIGURATION — same project as the public site.
+// This config is not a secret; real protection comes from Firebase Auth +
+// Firestore Security Rules restricting writes to signed-in admins.
+const firebaseConfig = {
+  apiKey: "AIzaSyC4Enyi8CEJzGffh339VXp5BADM-qio644",
+  authDomain: "xtremetiers2.firebaseapp.com",
+  projectId: "xtremetiers2",
+  storageBucket: "xtremetiers2.firebasestorage.app",
+  messagingSenderId: "786432880988",
+  appId: "1:786432880988:web:cb9c01b91e80fce6115199"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+const playersCollectionRef = db.collection('players');
+let firebaseLiveListenerUnsubscribe = null;
+
+const DEFAULT_GAMEMODES_LIST = [
+  { id: 'overall',    label: 'Overall',       type: 'emoji', value: '🏆' },
+  { id: 'vanilla',    label: 'Vanilla',       type: 'link', value: 'https://raw.githubusercontent.com/xtremetechprograms/XtremeTiers4/6ad21bc29f857ff6fec30ffbe3a18b883de679a7/cpvp.png' },
+  { id: 'sword',      label: 'Sword',         type: 'emoji', value: '⚔️' },
+  { id: 'nethpot',    label: 'Nethpot',       type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/nethop.png?raw=true' },
+  { id: 'diamondpot', label: 'Diamond Pot',   type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/Splash_Potion_of_Healing_JE2_BE2.png?raw=true' },
+  { id: 'uhc',        label: 'UHC',           type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/NicePng_lava-png_2333777.png?raw=true' },
+  { id: 'mace',       label: 'Mace',          type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/cff62287c480b3f8502dcb6b6bcc1fdc6f9b30fb.png?raw=true' },
+  { id: 'spearmace',  label: 'Spear Mace',    type: 'emoji', value: '🗡️' },
+  { id: 'smp',        label: 'SMP',           type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/6e7d624ff4c5fce44f7a9c3b6af3197ff815caec.png?raw=true' },
+  { id: 'axe',        label: 'Axe',           type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/Diamond-Axe-Minecraft-Tool-952.png?raw=true' },
+  { id: 'bedwars',    label: 'Bedwars',       type: 'link', value: 'https://github.com/xtremetechprograms/XtremeTiers4/blob/main/NicePng_bed-png_88115.png?raw=true' },
+  { id: 'spleef',     label: 'Spleef',        type: 'emoji', value: '❄️' },
+  { id: 'fireball',   label: 'Fireball Fight',type: 'emoji', value: '🔥' }
+];
+let dynamicGamemodesMappingList = JSON.parse(JSON.stringify(DEFAULT_GAMEMODES_LIST));
+const configDocRef = db.collection('config').doc('gamemodes');
+
+const SUGGESTED_TIER_POINTS_BOUNDS = {
+  LT5: { start: 10,  end: 49 },  HT5: { start: 50,  end: 99 },
+  LT4: { start: 100, end: 149 }, HT4: { start: 150, end: 199 },
+  LT3: { start: 200, end: 249 }, HT3: { start: 250, end: 299 },
+  LT2: { start: 300, end: 349 }, HT2: { start: 350, end: 399 },
+  LT1: { start: 400, end: 449 }, HT1: { start: 450, end: 500 }
+};
+
+let appRuntimeState = {
+  currentAdminSubViewId: 'add',
+  playersCollection: []
+};
+
+// ── AUTH GATE ──
+auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('loginGate');
+  const dash = document.getElementById('adminDashboard');
+  const signOutWrap = document.getElementById('signOutWrap');
+  if (user) {
+    gate.style.display = 'none';
+    dash.style.display = 'grid';
+    signOutWrap.style.display = 'block';
+    document.getElementById('formFirebaseProjectId').value = firebaseConfig.projectId;
+    loadGamemodeConfigFromFirebase();
+    startFirebaseRealtimeSync();
+    if (document.getElementById('gamemodeRowsContainer').children.length === 0) addGamemodeRow();
+  } else {
+    gate.style.display = 'block';
+    dash.style.display = 'none';
+    signOutWrap.style.display = 'none';
+    if (firebaseLiveListenerUnsubscribe) { firebaseLiveListenerUnsubscribe(); firebaseLiveListenerUnsubscribe = null; }
+  }
+});
+
+function doAdminLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('btnLogin');
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Enter both email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(err => {
+      console.error("Admin sign-in failed:", err);
+      errEl.textContent = '❌ Sign-in failed: ' + err.message;
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = 'Sign In'; });
+}
+
+function signOutAdmin() {
+  auth.signOut();
+}
+
+function switchAdminSubView(viewTargetId) {
+  document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.admin-workspace-view').forEach(el => el.classList.remove('active'));
+  document.getElementById(`btn-adm-${viewTargetId}`).classList.add('active');
+  document.getElementById(`adm-view-${viewTargetId}`).classList.add('active');
+  appRuntimeState.currentAdminSubViewId = viewTargetId;
+  if (viewTargetId === 'manage') loadAdminManagementDataGrid();
+  if (viewTargetId === 'logos') loadAdminGamemodeLogosGrid();
+}
+
+function loadGamemodeConfigFromFirebase() {
+  configDocRef.onSnapshot(doc => {
+    if (doc.exists && doc.data().modes) {
+      dynamicGamemodesMappingList = doc.data().modes.map(gm => ({ ...gm, value: (gm.value || '').replace(/<[^>]*>/g, '').trim() }));
+    } else {
+      dynamicGamemodesMappingList = JSON.parse(JSON.stringify(DEFAULT_GAMEMODES_LIST));
+    }
+    if (appRuntimeState.currentAdminSubViewId === 'logos') loadAdminGamemodeLogosGrid();
+  }, err => console.warn("Could not sync gamemode config from Firebase:", err));
+}
+
+function saveGamemodeConfigToFirebase() {
+  configDocRef.set({ modes: dynamicGamemodesMappingList })
+    .catch(err => console.error("Failed to save gamemode config to Firebase:", err));
+}
+
+function startFirebaseRealtimeSync() {
+  if (firebaseLiveListenerUnsubscribe) firebaseLiveListenerUnsubscribe();
+  firebaseLiveListenerUnsubscribe = playersCollectionRef.onSnapshot((snapshot) => {
+    appRuntimeState.playersCollection = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    if (appRuntimeState.currentAdminSubViewId === 'manage') loadAdminManagementDataGrid();
+    updateFirebaseSyncStatusPanel(true, snapshot.size);
+  }, (err) => {
+    console.error("Firebase Realtime Sync Error: ", err);
+    updateFirebaseSyncStatusPanel(false, 0);
+  });
+}
+
+function forceFirebaseConnectionCheck() {
+  playersCollectionRef.get({ source: 'server' })
+    .then(snapshot => {
+      updateFirebaseSyncStatusPanel(true, snapshot.size);
+      alert(`⚡ Firebase connection OK! Found ${snapshot.size} document(s) in the 'players' collection.`);
+    })
+    .catch(err => {
+      updateFirebaseSyncStatusPanel(false, 0);
+      alert("❌ Firebase connection test failed: " + err.message);
+    });
+}
+
+function updateFirebaseSyncStatusPanel(isConnected, docCount) {
+  const dot = document.getElementById('fbStatusDot');
+  const text = document.getElementById('fbStatusText');
+  const count = document.getElementById('fbDocCount');
+  if (!dot || !text) return;
+  if (isConnected) {
+    dot.style.background = 'var(--winner-green)';
+    text.textContent = 'Connected — Live Sync Active';
+    text.style.color = 'var(--text-bright)';
+    if (count) count.textContent = `${docCount} document(s) in 'players'`;
+  } else {
+    dot.style.background = '#ff4444';
+    text.textContent = 'Connection Failed';
+    text.style.color = '#ff4444';
+    if (count) count.textContent = '';
+  }
+}
+
+function parseIconElementHtmlMarkup(modeId, size) {
+  size = size || 22;
+  let item = dynamicGamemodesMappingList.find(g => g.id === modeId);
+  if (!item) return '🎮';
+  if (item.type === 'link') {
+    return `<img src="${item.value}" onerror="this.outerHTML='🎮'" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:3px;display:block;flex-shrink:0;">`;
+  }
+  return item.value;
+}
+
+// ── LOGOS MANAGEMENT ──
+function loadAdminGamemodeLogosGrid() {
+  const container = document.getElementById('adminGamemodeLogosContainerRows');
+  container.innerHTML = dynamicGamemodesMappingList.map((gm, indexId) => {
+    const safeValue = (gm.value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `
+    <tr>
+      <td><strong>${gm.label}</strong></td>
+      <td>
+        <select class="form-select" style="padding: 4px;" onchange="updateLogoAssetType(${indexId}, this.value)">
+          <option value="emoji" ${gm.type === 'emoji' ? 'selected' : ''}>Text Emoji Character</option>
+          <option value="link" ${gm.type === 'link' ? 'selected' : ''}>Network Image logo URL Link</option>
+        </select>
+      </td>
+      <td>
+        <input type="text" class="form-input" style="padding: 6px;" value="${safeValue}" onchange="updateLogoAssetValue(${indexId}, this.value)">
+      </td>
+      <td>
+        <div style="width:30px; height:30px; display:flex; align-items:center; justify-content:center; background:#111; border-radius:4px;">
+          ${parseIconElementHtmlMarkup(gm.id, 26)}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateLogoAssetType(indexId, typeValue) {
+  dynamicGamemodesMappingList[indexId].type = typeValue;
+  saveGamemodeConfigToFirebase();
+  loadAdminGamemodeLogosGrid();
+}
+
+function updateLogoAssetValue(indexId, rawTextValue) {
+  const clean = rawTextValue.replace(/<[^>]*>/g, '').trim();
+  dynamicGamemodesMappingList[indexId].value = clean;
+  saveGamemodeConfigToFirebase();
+  loadAdminGamemodeLogosGrid();
+}
+
+// ── GAMEMODE TIER HELPERS ──
+function buildTierOptions(selectedTier) {
+  const tiers = ['HT1','LT1','HT2','LT2','HT3','LT3','HT4','LT4','HT5','LT5'];
+  return '<option value="">— Unranked —</option>' + tiers.map(t =>
+    `<option value="${t}" ${t === selectedTier ? 'selected' : ''}>${t}</option>`
+  ).join('');
+}
+
+function buildGamemodeOptions(selectedGm) {
+  return dynamicGamemodesMappingList
+    .filter(g => g.id !== 'overall')
+    .map(g => `<option value="${g.id}" ${g.id === selectedGm ? 'selected' : ''}>${g.label}</option>`)
+    .join('');
+}
+
+function buildPointsOptions(tier, selectedPoints) {
+  if (!tier || !SUGGESTED_TIER_POINTS_BOUNDS[tier]) return `<option value="${selectedPoints||0}">${selectedPoints||0}</option>`;
+  const b = SUGGESTED_TIER_POINTS_BOUNDS[tier];
+  let opts = '';
+  for (let i = b.end; i >= b.start; i--) {
+    opts += `<option value="${i}" ${i == selectedPoints ? 'selected' : ''}>${i} pts</option>`;
+  }
+  return opts;
+}
+
+function addGamemodeRow(gm, tier, points) {
+  const container = document.getElementById('gamemodeRowsContainer');
+  const idx = container.children.length;
+  const div = document.createElement('div');
+  div.className = 'gm-row';
+  div.dataset.rowIdx = idx;
+  div.innerHTML = `
+    <div class="form-group" style="margin:0;">
+      <label>Gamemode</label>
+      <select class="form-select gm-row-mode" onchange="refreshRowPoints(this)">
+        ${buildGamemodeOptions(gm || '')}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Tier</label>
+      <select class="form-select gm-row-tier" onchange="refreshRowPoints(this)">
+        ${buildTierOptions(tier || '')}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Points</label>
+      <select class="form-select gm-row-points">
+        ${buildPointsOptions(tier || '', points)}
+      </select>
+    </div>
+    <button class="btn-rm-gm" onclick="removeGamemodeRow(this)" title="Remove">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function refreshRowPoints(el) {
+  const row = el.closest('.gm-row');
+  const tier = row.querySelector('.gm-row-tier').value;
+  const ptsSel = row.querySelector('.gm-row-points');
+  const cur = ptsSel.value;
+  ptsSel.innerHTML = buildPointsOptions(tier, cur);
+}
+
+function removeGamemodeRow(btn) {
+  btn.closest('.gm-row').remove();
+}
+
+// ── SAVE / EDIT / DELETE PLAYERS ──
+function commitProfileEntryRecordToCache() {
+  const ign = document.getElementById('formPlayerIgn').value.trim();
+  const region = document.getElementById('formPlayerRegion').value;
+  const avatar = document.getElementById('formPlayerAvatar').value.trim();
+  const device = document.getElementById('formPlayerDevice').value;
+  const saveBtn = document.getElementById('btnSavePlayerProfile');
+  const originalEditName = document.getElementById('formEditPlayerName').value.trim();
+
+  if (!ign) { alert("Please enter a player IGN."); return; }
+
+  const rows = document.querySelectorAll('#gamemodeRowsContainer .gm-row');
+  if (rows.length === 0) { alert("Add at least one gamemode bracket."); return; }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "⏳ Saving to Firebase...";
+
+  let payloadList = [];
+  rows.forEach(row => {
+    const mId = row.querySelector('.gm-row-mode').value;
+    const tVal = row.querySelector('.gm-row-tier').value;
+    const pVal = parseInt(row.querySelector('.gm-row-points').value) || 0;
+    let modeMeta = dynamicGamemodesMappingList.find(g => g.id === mId);
+    let emojiVal = modeMeta ? modeMeta.value : '🎮';
+    payloadList.push({ name: ign, region, gamemode: mId, tier: tVal, points: pVal, avatar, device, emoji: emojiVal });
+  });
+
+  const batch = db.batch();
+  if (originalEditName) {
+    const staleDocs = appRuntimeState.playersCollection.filter(p => p.name === originalEditName);
+    staleDocs.forEach(p => { if (p.id) batch.delete(playersCollectionRef.doc(p.id)); });
+  }
+  payloadList.forEach(entry => {
+    const newDocRef = playersCollectionRef.doc();
+    batch.set(newDocRef, entry);
+  });
+
+  batch.commit()
+    .then(() => {
+      alert("🚀 Player profile saved successfully to Firebase! Leaderboard updates instantly.");
+      resetAdminEntryFormStates();
+    })
+    .catch(err => {
+      console.error("Firebase Write Error:", err);
+      alert("❌ Firebase save failed: " + err.message);
+    })
+    .finally(() => {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save Player";
+    });
+}
+
+function loadProfileDataRowToFormFieldsEditor(playerName) {
+  const entries = appRuntimeState.playersCollection.filter(p => p.name === playerName);
+  if (!entries.length) return;
+
+  const first = entries[0];
+  document.getElementById('formPlayerIgn').value = first.name;
+  document.getElementById('formPlayerRegion').value = first.region;
+  document.getElementById('formPlayerAvatar').value = first.avatar || '';
+  document.getElementById('formPlayerDevice').value = first.device || '';
+  document.getElementById('formEditPlayerName').value = first.name;
+  document.getElementById('formViewTitle').textContent = 'Edit Player: ' + first.name;
+  document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+
+  const container = document.getElementById('gamemodeRowsContainer');
+  container.innerHTML = '';
+  entries.forEach(e => addGamemodeRow(e.gamemode, e.tier, e.points));
+
+  switchAdminSubView('add');
+}
+
+function resetAdminEntryFormStates() {
+  document.getElementById('formPlayerIgn').value = '';
+  document.getElementById('formPlayerAvatar').value = '';
+  document.getElementById('formPlayerDevice').value = '';
+  document.getElementById('formEditPlayerName').value = '';
+  document.getElementById('formViewTitle').textContent = 'Add Player Record';
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  const container = document.getElementById('gamemodeRowsContainer');
+  container.innerHTML = '';
+  addGamemodeRow();
+}
+
+function loadAdminManagementDataGrid() {
+  const rowTargetDestination = document.getElementById('adminProfileGridTargetRows');
+  if (appRuntimeState.playersCollection.length === 0) {
+    rowTargetDestination.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No records found. Run a sync setup check first.</td></tr>`;
+    return;
+  }
+  const grouped = {};
+  appRuntimeState.playersCollection.forEach(p => {
+    if (!grouped[p.name]) grouped[p.name] = { region: p.region, device: p.device, entries: [] };
+    grouped[p.name].entries.push(p);
+  });
+  rowTargetDestination.innerHTML = Object.entries(grouped).map(([name, data]) => {
+    const tiersHtml = data.entries.map(e =>
+      `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-family:'Orbitron',sans-serif;font-weight:900;margin:2px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--color-${(e.tier||'lt5').toLowerCase()})">${e.gamemode}: ${e.tier||'Unranked'} (${e.points}pts)</span>`
+    ).join('');
+    const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return `<tr>
+      <td><strong>${name}</strong></td>
+      <td><span class="region-pill pill-${data.region.toLowerCase()}">${data.region}</span></td>
+      <td style="max-width:320px;">${tiersHtml}</td>
+      <td>${data.device || '—'}</td>
+      <td>
+        <button class="btn-action edit" onclick="loadProfileDataRowToFormFieldsEditor('${safeName}')">Edit</button>
+        <button class="btn-action delete" onclick="evictProfileDataRowEntry('${safeName}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function evictProfileDataRowEntry(playerName) {
+  if (!confirm(`Permanently delete "${playerName}" and all their gamemode/tier records from Firebase? This cannot be undone.`)) return;
+
+  const docsToDelete = appRuntimeState.playersCollection.filter(p => p.name === playerName);
+  if (docsToDelete.length === 0) return;
+
+  const batch = db.batch();
+  docsToDelete.forEach(p => { if (p.id) batch.delete(playersCollectionRef.doc(p.id)); });
+
+  batch.commit().catch(err => {
+    console.error("Firebase Delete Error:", err);
+    alert("❌ Delete failed: " + err.message);
+  });
+}
+</script>
+
+</body>
+</html>
